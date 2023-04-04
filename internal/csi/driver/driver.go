@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	aws "github.com/aws/rolesanywhere-credential-helper/aws_signing_helper"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -311,9 +312,37 @@ func (d *Driver) writeKeypair(meta metadata.Metadata, key crypto.PrivateKey, cha
 		return fmt.Errorf("failed to calculate next issuance time: %w", err)
 	}
 
+	var awsCreds string
+	if meta.VolumeContext["csi.cert-manager.io/aws-enable"] == "true" {
+
+		duration := time.Until(nextIssuanceTime).Seconds()
+		opts := aws.CredentialsOpts{
+			PrivateKeyId:      string(keyPEM),
+			CertificateId:     string(chain),
+			Region:            meta.VolumeContext["csi.cert-manager.io/aws-region"],
+			ProfileArnStr:     meta.VolumeContext["csi.cert-manager.io/aws-trust-profile"],
+			TrustAnchorArnStr: meta.VolumeContext["csi.cert-manager.io/aws-trust-anchor"],
+			RoleArn:           meta.VolumeContext["csi.cert-manager.io/aws-role"],
+			SessionDuration:   int(duration),
+			Endpoint:          "",
+		}
+		credentials, err := aws.GenerateCredentials(&opts)
+		if err != nil {
+			return fmt.Errorf("Creating aws credentials: %w", err)
+		}
+
+		awsCreds = fmt.Sprintf(`[temp]
+aws_access_key_id = %s
+aws_secret_access_key = %s
+aws_session_token = %s
+`, credentials.AccessKeyId, credentials.SecretAccessKey, credentials.SessionToken)
+
+	}
+
 	data := map[string][]byte{
 		d.certFileName: chain,
 		d.keyFileName:  keyPEM,
+		"credentials":  []byte(awsCreds),
 	}
 	// If configured, write the CA certificates as defined in RootCAs.
 	if d.rootCAs != nil {

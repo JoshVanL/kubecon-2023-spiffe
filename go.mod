@@ -3,6 +3,7 @@ module github.com/cert-manager/csi-driver-spiffe
 go 1.19
 
 require (
+	github.com/aws/rolesanywhere-credential-helper v1.0.4
 	github.com/cert-manager/cert-manager v1.10.0
 	github.com/cert-manager/csi-lib v0.4.0
 	github.com/fsnotify/fsnotify v1.6.0
@@ -45,6 +46,7 @@ require (
 	github.com/Masterminds/squirrel v1.5.3 // indirect
 	github.com/alessio/shellescape v1.4.1 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
+	github.com/aws/aws-sdk-go v1.44.105 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
@@ -91,6 +93,7 @@ require (
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
