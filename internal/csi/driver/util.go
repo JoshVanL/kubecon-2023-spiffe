@@ -47,6 +47,21 @@ func signRequest(_ metadata.Metadata, key crypto.PrivateKey, request *x509.Certi
 	}), nil
 }
 
+// getCertExpiryTime returns the expiry time of certificate.
+func getCertExpiryTime(chain []byte) (time.Duration, error) {
+	block, _ := pem.Decode(chain)
+
+	crt, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return 0, fmt.Errorf("parsing issued certificate: %w", err)
+	}
+
+	// Renew once a certificate is 2/3rds of the way through its actual lifetime.
+	actualDuration := crt.NotAfter.Sub(crt.NotBefore)
+
+	return actualDuration, nil
+}
+
 // calculateNextIssuanceTime returns the time when the certificate should be
 // renewed. This will be 2/3rds the duration of the leaf certificate's validity period.
 func calculateNextIssuanceTime(chain []byte) (time.Time, error) {

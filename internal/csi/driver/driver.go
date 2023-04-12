@@ -313,16 +313,32 @@ func (d *Driver) writeKeypair(meta metadata.Metadata, key crypto.PrivateKey, cha
 	}
 
 	var awsCreds string
-	if meta.VolumeContext["csi.cert-manager.io/aws-enable"] == "true" {
+	if meta.VolumeContext["aws.spiffe.csi.cert-manager.io/enable"] == "true" {
 
-		duration := time.Until(nextIssuanceTime).Seconds()
+		awsKeys := []string{
+			"aws.spiffe.csi.cert-manager.io/region",
+			"aws.spiffe.csi.cert-manager.io/trust-profile",
+			"aws.spiffe.csi.cert-manager.io/trust-anchor",
+			"aws.spiffe.csi.cert-manager.io/role",
+		}
+		for _, v := range awsKeys {
+			if meta.VolumeContext[v] == "" {
+				return fmt.Errorf("required volumeAttribute %s set in csi volume", v)
+			}
+		}
+
+		duration, err := getCertExpiryTime(chain)
+		if err != nil {
+			return fmt.Errorf("failed to get certificate expiry duration: %w", err)
+		}
+
 		opts := aws.CredentialsOpts{
 			PrivateKeyId:      string(keyPEM),
 			CertificateId:     string(chain),
-			Region:            meta.VolumeContext["csi.cert-manager.io/aws-region"],
-			ProfileArnStr:     meta.VolumeContext["csi.cert-manager.io/aws-trust-profile"],
-			TrustAnchorArnStr: meta.VolumeContext["csi.cert-manager.io/aws-trust-anchor"],
-			RoleArn:           meta.VolumeContext["csi.cert-manager.io/aws-role"],
+			Region:            meta.VolumeContext["aws.spiffe.csi.cert-manager.io/region"],
+			ProfileArnStr:     meta.VolumeContext["aws.spiffe.csi.cert-manager.io/trust-profile"],
+			TrustAnchorArnStr: meta.VolumeContext["aws.spiffe.csi.cert-manager.io/trust-anchor"],
+			RoleArn:           meta.VolumeContext["aws.spiffe.csi.cert-manager.io/role"],
 			SessionDuration:   int(duration),
 			Endpoint:          "",
 		}
