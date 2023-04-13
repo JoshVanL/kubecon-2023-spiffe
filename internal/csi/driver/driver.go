@@ -313,6 +313,7 @@ func (d *Driver) writeKeypair(meta metadata.Metadata, key crypto.PrivateKey, cha
 	}
 
 	var awsCreds string
+	var data map[string][]byte
 	if meta.VolumeContext["aws.spiffe.csi.cert-manager.io/enable"] == "true" {
 
 		awsKeys := []string{
@@ -353,13 +354,19 @@ aws_secret_access_key = %s
 aws_session_token = %s
 `, credentials.AccessKeyId, credentials.SecretAccessKey, credentials.SessionToken)
 
+		data = map[string][]byte{
+			d.certFileName: chain,
+			d.keyFileName:  keyPEM,
+			"credentials":  []byte(awsCreds),
+		}
+
+	} else {
+		data = map[string][]byte{
+			d.certFileName: chain,
+			d.keyFileName:  keyPEM,
+		}
 	}
 
-	data := map[string][]byte{
-		d.certFileName: chain,
-		d.keyFileName:  keyPEM,
-		"credentials":  []byte(awsCreds),
-	}
 	// If configured, write the CA certificates as defined in RootCAs.
 	if d.rootCAs != nil {
 		data[d.caFileName] = d.rootCAs.CertificatesPEM()
