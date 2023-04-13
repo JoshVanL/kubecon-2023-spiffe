@@ -41,7 +41,7 @@ metadata:
   labels:
     app: my-csi-app
 spec:
-  replicas: 5
+  replicas: 1
   selector:
     matchLabels:
       app: my-csi-app
@@ -52,15 +52,20 @@ spec:
     spec:
       serviceAccountName: example-app
       containers:
-        - name: my-frontend
-          image: busybox
+        - name: example-app
+          image: amazon/aws-cli
           imagePullPolicy: IfNotPresent
           command: [ "sleep", "1000000" ]
           volumeMounts:
-          - mountPath: "/var/run/secrets/spiffe.io"
+          - mountPath: "/root/.aws"
             name: spiffe
       volumes:
         - name: spiffe
           csi:
             driver: spiffe.csi.cert-manager.io
             readOnly: true
+            volumeAttributes:
+              aws.spiffe.csi.cert-manager.io/trust-profile: ""
+              aws.spiffe.csi.cert-manager.io/trust-anchor: ""
+              aws.spiffe.csi.cert-manager.io/role: ""
+              aws.spiffe.csi.cert-manager.io/enable: "true"

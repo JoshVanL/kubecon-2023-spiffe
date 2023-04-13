@@ -21,12 +21,12 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"net/url"
 	"sync"
 	"time"
 
-	aws "github.com/aws/rolesanywhere-credential-helper/aws_signing_helper"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -40,7 +40,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/clock"
 
+	"github.com/cert-manager/csi-driver-spiffe/internal/csi/aws"
 	"github.com/cert-manager/csi-driver-spiffe/internal/csi/rootca"
+	"github.com/cert-manager/csi-driver-spiffe/internal/version"
 )
 
 // Options holds the Options needed for the CSI driver.
@@ -179,7 +181,7 @@ func New(log logr.Logger, opts Options) (*Driver, error) {
 	mngrLog := d.log.WithName("manager")
 	d.driver, err = driver.New(opts.Endpoint, d.log.WithName("driver"), driver.Options{
 		DriverName:    opts.DriverName,
-		DriverVersion: "v0.2.0",
+		DriverVersion: version.String,
 		NodeID:        opts.NodeID,
 		Store:         d.store,
 		Manager: manager.NewManagerOrDie(manager.Options{
@@ -307,64 +309,32 @@ func (d *Driver) writeKeypair(meta metadata.Metadata, key crypto.PrivateKey, cha
 
 	// Calculate the next issuance time before we write any data to file, so in
 	// the cases where this errors, we are not left in a bad state.
-	nextIssuanceTime, err := calculateNextIssuanceTime(chain)
+	certs, nextIssuanceTime, actualDuration, err := nextIssuanceTimeAndDuration(chain)
 	if err != nil {
 		return fmt.Errorf("failed to calculate next issuance time: %w", err)
 	}
 
-	var awsCreds string
-	var data map[string][]byte
+	data := map[string][]byte{
+		d.certFileName: chain,
+		d.keyFileName:  keyPEM,
+	}
+
 	if meta.VolumeContext["aws.spiffe.csi.cert-manager.io/enable"] == "true" {
-
-		awsKeys := []string{
-			"aws.spiffe.csi.cert-manager.io/region",
-			"aws.spiffe.csi.cert-manager.io/trust-profile",
-			"aws.spiffe.csi.cert-manager.io/trust-anchor",
-			"aws.spiffe.csi.cert-manager.io/role",
-		}
-		for _, v := range awsKeys {
-			if meta.VolumeContext[v] == "" {
-				return fmt.Errorf("required volumeAttribute %s set in csi volume", v)
-			}
-		}
-
-		duration, err := getCertExpiryTime(chain)
+		credentials, err := aws.BuildProfile(aws.Options{
+			TrustAnchorArn:           meta.VolumeContext["aws.spiffe.csi.cert-manager.io/trust-anchor"],
+			ProfileArn:               meta.VolumeContext["aws.spiffe.csi.cert-manager.io/trust-profile"],
+			RoleArn:                  meta.VolumeContext["aws.spiffe.csi.cert-manager.io/role"],
+			CertificateChainPEM:      string(chain),
+			CertificateLeaf:          &certs[0],
+			CertificateIntermediates: certs[1:],
+			PrivateKey:               key,
+			DurationSeconds:          int64(actualDuration.Seconds()),
+		})
 		if err != nil {
-			return fmt.Errorf("failed to get certificate expiry duration: %w", err)
+			return fmt.Errorf("failed to build AWS credentials: %w", err)
 		}
 
-		opts := aws.CredentialsOpts{
-			PrivateKeyId:      string(keyPEM),
-			CertificateId:     string(chain),
-			Region:            meta.VolumeContext["aws.spiffe.csi.cert-manager.io/region"],
-			ProfileArnStr:     meta.VolumeContext["aws.spiffe.csi.cert-manager.io/trust-profile"],
-			TrustAnchorArnStr: meta.VolumeContext["aws.spiffe.csi.cert-manager.io/trust-anchor"],
-			RoleArn:           meta.VolumeContext["aws.spiffe.csi.cert-manager.io/role"],
-			SessionDuration:   int(duration),
-			Endpoint:          "",
-		}
-		credentials, err := aws.GenerateCredentials(&opts)
-		if err != nil {
-			return fmt.Errorf("Creating aws credentials: %w", err)
-		}
-
-		awsCreds = fmt.Sprintf(`[temp]
-aws_access_key_id = %s
-aws_secret_access_key = %s
-aws_session_token = %s
-`, credentials.AccessKeyId, credentials.SecretAccessKey, credentials.SessionToken)
-
-		data = map[string][]byte{
-			d.certFileName: chain,
-			d.keyFileName:  keyPEM,
-			"credentials":  []byte(awsCreds),
-		}
-
-	} else {
-		data = map[string][]byte{
-			d.certFileName: chain,
-			d.keyFileName:  keyPEM,
-		}
+		data["credentials"] = credentials
 	}
 
 	// If configured, write the CA certificates as defined in RootCAs.
@@ -383,4 +353,29 @@ aws_session_token = %s
 	}
 
 	return nil
+}
+
+// readyToRequest returns true if the given meta passes validation checks and
+// is ready to be used to request a certificate.
+func (d *Driver) readyToRequest(meta metadata.Metadata) (bool, string) {
+	var err error
+
+	if meta.VolumeContext["aws.spiffe.csi.cert-manager.io/enable"] == "true" {
+		awsKeys := []string{
+			"aws.spiffe.csi.cert-manager.io/trust-profile",
+			"aws.spiffe.csi.cert-manager.io/trust-anchor",
+			"aws.spiffe.csi.cert-manager.io/role",
+		}
+		for _, v := range awsKeys {
+			if meta.VolumeContext[v] == "" {
+				err = errors.Join(err, fmt.Errorf("required volumeAttribute set in csi volume when aws enabled: %q", v))
+			}
+		}
+	}
+
+	if err != nil {
+		return false, err.Error()
+	}
+
+	return true, ""
 }

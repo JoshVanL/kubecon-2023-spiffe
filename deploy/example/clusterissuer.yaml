@@ -8,6 +8,28 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
+  name: csi-driver-spiffe-root
+  namespace: cert-manager
+spec:
+  commonName: csi-driver-spiffe-root
+  secretName: csi-driver-spiffe-root
+  duration: 2160h
+  isCA: true
+  issuerRef:
+    name: selfsigned
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: csi-driver-spiffe-root
+spec:
+  ca:
+    secretName: csi-driver-spiffe-root
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
   name: csi-driver-spiffe-ca
   namespace: cert-manager
 spec:
@@ -16,9 +38,8 @@ spec:
   duration: 2160h
   isCA: true
   issuerRef:
-    name: selfsigned
+    name: csi-driver-spiffe-root
     kind: ClusterIssuer
-    group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
