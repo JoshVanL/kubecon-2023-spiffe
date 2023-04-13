@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM docker.io/library/golang:1.19 as builder
+FROM docker.io/library/golang:1.20 as builder
 
 WORKDIR /workspace
 
@@ -22,9 +22,8 @@ COPY go.sum go.sum
 
 # Copy the go source files
 COPY Makefile Makefile
-COPY cmd/approver cmd/approver
-COPY internal/approver internal/approver
-COPY internal/flags internal/flags
+COPY cmd cmd
+COPY internal internal
 
 # Build
 RUN make build-approver

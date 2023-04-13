@@ -47,35 +47,28 @@ func signRequest(_ metadata.Metadata, key crypto.PrivateKey, request *x509.Certi
 	}), nil
 }
 
-// getCertExpiryTime returns the expiry time of certificate.
-func getCertExpiryTime(chain []byte) (time.Duration, error) {
-	block, _ := pem.Decode(chain)
+// nextIssuanceTime returns the time when the certificate should be renewed, as
+// well as the duration of the certificate lifetime itself.
+// The renew time will be 2/3rds the duration of the leaf certificate's
+// validity period.
+func nextIssuanceTimeAndDuration(chain []byte) ([]x509.Certificate, time.Time, time.Duration, error) {
+	var certs []x509.Certificate
+	for block, rest := pem.Decode(chain); block != nil; block, rest = pem.Decode(rest) {
+		crt, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, time.Time{}, -1, fmt.Errorf("parsing issued certificate: %w", err)
+		}
 
-	crt, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return 0, fmt.Errorf("parsing issued certificate: %w", err)
+		certs = append(certs, *crt)
+	}
+
+	if len(certs) == 0 {
+		return nil, time.Time{}, -1, fmt.Errorf("no certificates found in chain")
 	}
 
 	// Renew once a certificate is 2/3rds of the way through its actual lifetime.
-	actualDuration := crt.NotAfter.Sub(crt.NotBefore)
-
-	return actualDuration, nil
-}
-
-// calculateNextIssuanceTime returns the time when the certificate should be
-// renewed. This will be 2/3rds the duration of the leaf certificate's validity period.
-func calculateNextIssuanceTime(chain []byte) (time.Time, error) {
-	block, _ := pem.Decode(chain)
-
-	crt, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("parsing issued certificate: %w", err)
-	}
-
-	// Renew once a certificate is 2/3rds of the way through its actual lifetime.
-	actualDuration := crt.NotAfter.Sub(crt.NotBefore)
+	actualDuration := certs[0].NotAfter.Sub(certs[0].NotBefore)
 
 	renewBeforeNotAfter := actualDuration / 3
-
-	return crt.NotAfter.Add(-renewBeforeNotAfter), nil
+	return certs, certs[0].NotAfter.Add(-renewBeforeNotAfter), actualDuration, nil
 }
