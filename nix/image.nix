@@ -74,6 +74,7 @@ let
   publish-image = image-name: builder: pkgs.runCommand "publish-image" {
     nativeBuildInputs = with pkgs;[ podman ];
   } ''
+    export HOME=$(pwd)
     echo ">> Pushing image '${image-name}:${version}'..."
     podman manifest create ${image-name}:${version}
     podman manifest add ${image-name}:${version} docker-archive:${builder "amd64" "${version}-amd64"} --os linux --arch amd64
@@ -94,10 +95,9 @@ let
       echo "''${GITHUB_TOKEN}" | podman login ghcr.io -u $ --password-stdin
 
       echo ">> Pushing images..."
-      ${publish-image "${repo}/cert-manager-csi-driver" build-driver} &
-      ${publish-image "${repo}/cert-manager-csi-driver-approver" build-approver} &
-      ${publish-image "${repo}/spiffe-sample-app" build-sample} &
-      wait
+      ${publish-image "${repo}/cert-manager-csi-driver" build-driver}
+      ${publish-image "${repo}/cert-manager-csi-driver-approver" build-approver}
+      ${publish-image "${repo}/spiffe-sample-app" build-sample}
     '';
   };
 
