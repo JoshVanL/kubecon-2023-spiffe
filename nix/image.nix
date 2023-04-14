@@ -71,21 +71,12 @@ let
     config = { User = "1001:1001"; };
   };
 
-  publish-image = image-name: builder: pkgs.runCommand "publish-image" {
-    nativeBuildInputs = with pkgs;[ podman ];
-  } ''
-    export HOME=$(pwd)
-    echo ">> Pushing image '${image-name}:${version}'..."
-    podman manifest create ${image-name}:${version}
-    podman manifest add ${image-name}:${version} docker-archive:${builder "amd64" "${version}-amd64"} --os linux --arch amd64
-    podman manifest add ${image-name}:${version} docker-archive:${builder "arm64" "${version}-arm64"} --os linux --arch arm64
-    podman push ${image-name}:${version}
-  '';
-
   publish = pkgs.writeShellApplication {
     name = "publish";
     runtimeInputs = with pkgs;[ podman ];
     text = ''
+      echo ">> Pushing images..."
+
       if [[ -z "''${GITHUB_TOKEN}" ]]; then
         echo ">> Environment varibale 'GITHUB_TOKEN' is not set."
         exit 1
@@ -94,10 +85,24 @@ let
       echo ">> Logging into GitHub Container Registry..."
       echo "''${GITHUB_TOKEN}" | podman login ghcr.io -u $ --password-stdin
 
-      echo ">> Pushing images..."
-      ${publish-image "${repo}/cert-manager-csi-driver" build-driver}
-      ${publish-image "${repo}/cert-manager-csi-driver-approver" build-approver}
-      ${publish-image "${repo}/spiffe-sample-app" build-sample}
+      DRIVER_IMAGE="${repo}/cert-manager-csi-driver:${version}"
+      APPROVER_IMAGE="${repo}/cert-manager-csi-driver-approver:${version}"
+      SAMPLE_APP_IMAGE="${repo}/spiffe-sample-app:${version}"
+
+      podman manifest create $DRIVER_IMAGE
+      podman manifest add $DRIVER_IMAGE docker-archive:${build-driver "amd64" "${version}-amd64"} --os linux --arch amd64
+      podman manifest add $DRIVER_IMAGE docker-archive:${build-driver "arm64" "${version}-arm64"} --os linux --arch arm64
+      podman push $DRIVER_IMAGE
+
+      podman manifest create $APPROVER_IMAGE
+      podman manifest add $APPROVER_IMAGE docker-archive:${build-approver "amd64" "${version}-amd64"} --os linux --arch amd64
+      podman manifest add $APPROVER_IMAGE docker-archive:${build-approver "arm64" "${version}-arm64"} --os linux --arch arm64
+      podman push $APPROVER_IMAGE
+
+      podman manifest create $SAMPLE_APP_IMAGE
+      podman manifest add $SAMPLE_APP_IMAGE docker-archive:${build-sample "amd64" "${version}-amd64"} --os linux --arch amd64
+      podman manifest add $SAMPLE_APP_IMAGE docker-archive:${build-sample "arm64" "${version}-arm64"} --os linux --arch arm64
+      podman push $SAMPLE_APP_IMAGE
     '';
   };
 
