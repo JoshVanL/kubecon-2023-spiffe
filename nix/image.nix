@@ -64,10 +64,11 @@ let
     name = "${repo}/spiffe-sample-app";
     contents = with pkgs; [
       awscli2
-      zsh
-      curl
       cacert
-    ]; config = { User = "1001:1001"; };
+      coreutils
+      zsh
+    ];
+    config = { User = "1001:1001"; };
   };
 
   publish-image = image-name: builder: pkgs.runCommand "publish-image" {
