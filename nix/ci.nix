@@ -85,7 +85,9 @@ let
 
       export KUBECONFIG="$TMPDIR/kubeconfig"
       echo ">> using kubeconfig: $KUBECONFIG"
+      echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
       echo "export KUBECONFIG=$KUBECONFIG"
+      echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
       echo ">> installing cert-manager, and CSI driver SPIFFE"
 
       helm repo add --force-update jetstack https://charts.jetstack.io
