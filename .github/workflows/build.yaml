@@ -14,3 +14,6 @@ jobs:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
     - run: nix flake check
     - run: nix run .#check
+    - run: nix build .#driver
+    - run: nix build .#approver
+    - run: nix build .#sample-app
