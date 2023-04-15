@@ -107,7 +107,7 @@ let
   };
 
 in {
-  inherit binary-driver binary-approver build-driver build-approver build-sample;
+  inherit build-driver build-approver build-sample;
 
   packages = {
     image-amd64-driver = (build-driver "amd64" "${version}-amd64");

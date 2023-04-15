@@ -53,7 +53,10 @@
 
     in {
       packages = {
-        default = (image.binary-driver localSystem localOS);
+        default = (image.build-driver localSystem localOS);
+        driver = (image.build-driver localSystem localOS);
+        approver = (image.build-approver localSystem localOS);
+        sample-app = (image.build-sample localSystem localOS);
       } // image.packages;
 
       apps = {
