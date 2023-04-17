@@ -37,6 +37,20 @@ let
     '';
   };
 
+  checkboilerplate = pkgs.writeShellApplication {
+    name = "check-boilerplate";
+    runtimeInputs = [ python3 ];
+    text = ''
+      files_need_boilerplate=($(boiler "$@"))
+      if [[ $${#files_need_boilerplate[@]} -gt 0 ]]; then
+        for file in "$${files_need_boilerplate[@]}"; do
+          echo "Boilerplate header is wrong for: $${file}"
+        done
+        exit 1
+      fi
+    '';
+  };
+
   update = pkgs.writeShellApplication {
     name = "update";
     runtimeInputs = [
@@ -56,11 +70,13 @@ let
     runtimeInputs = [
       checkgomod2nix
       checkhelmdocs
+      checkboilerplate
     ];
     text = ''
       check-gomod2nix ${repo}
       check-gomod2nix ${repo}/test/e2e
       check-helmdocs
+      check-boilerplate
     '';
   };
 
