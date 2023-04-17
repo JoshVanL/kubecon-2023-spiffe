@@ -33,6 +33,7 @@
           buildGoApplication = prev.buildGo120Application;
         })
         gomod2nix.overlays.default
+        (import ./nix/overlays/cmctl.nix)
       ];
 
       pkgs = import nixpkgs { inherit system overlays; };
