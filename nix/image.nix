@@ -1,5 +1,7 @@
 {
 pkgs,
+amdPkgs,
+armPkgs,
 src,
 version,
 }:
@@ -50,10 +52,10 @@ let
   };
 
   build-driver-amd = version:
-    (build-driver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64);
+    (build-driver "amd64" "${version}-amd64" amdPkgs);
 
   build-driver-arm = version:
-    (build-driver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform);
+    (build-driver "arm64" "${version}-arm64" armPkgs);
 
   build-approver = sys: tag: crossPkgs: pkgs.dockerTools.buildLayeredImage {
     inherit tag;
@@ -66,10 +68,10 @@ let
   };
 
   build-approver-amd = version:
-    (build-approver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64);
+    (build-approver "amd64" "${version}-amd64" amdPkgs);
 
   build-approver-arm = version:
-    (build-approver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform);
+    (build-approver "arm64" "${version}-arm64" armPkgs);
 
   build-sample = sys: tag: crossPkgs: pkgs.dockerTools.buildLayeredImage {
     inherit tag;
@@ -84,14 +86,14 @@ let
   };
 
   build-sample-amd = version:
-    (build-sample "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64);
+    (build-sample "amd64" "${version}-amd64" amdPkgs);
 
   build-sample-arm = version:
-    (build-sample "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform);
+    (build-sample "arm64" "${version}-arm64" armPkgs);
 
   publish = pkgs.writeShellApplication {
     name = "publish";
-    runtimeInputs = with pkgs;[ podman gcc ];
+    runtimeInputs = with pkgs;[ podman ];
     text = ''
       echo ">> Pushing images..."
 

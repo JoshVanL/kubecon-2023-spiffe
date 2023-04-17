@@ -27,19 +27,31 @@
 
   in utils.lib.eachSystem targetSystems (system:
     let
+
+      overlays = [
+        (final: prev: {
+          go = prev.go_1_20;
+          buildGoApplication = prev.buildGo120Application;
+        })
+        gomod2nix.overlays.default
+      ];
+
       pkgs = import nixpkgs {
-        inherit system;
-        overlays = [
-          (final: prev: {
-            go = prev.go_1_20;
-            buildGoApplication = prev.buildGo120Application;
-          })
-          gomod2nix.overlays.default
-        ];
+        inherit system overlays;
+      };
+
+      amdPkgs = import nixpkgs {
+        inherit overlays;
+        system = "x86_64-linux";
+      };
+
+      armPkgs = import nixpkgs {
+        inherit overlays;
+        system = "aarch64-linux";
       };
 
       image = import ./nix/image.nix {
-        inherit src pkgs version;
+        inherit src pkgs amdPkgs armPkgs version;
       };
 
       ci = import ./nix/ci.nix {
@@ -57,7 +69,7 @@
         driver = (image.build-driver localSystem "dev" pkgs);
         approver = (image.build-approver localSystem "dev" pkgs);
         sample-app = (image.build-sample localSystem "dev" pkgs);
-      };
+      } // image.packages;
 
       apps = {
         default = {type = "app"; program = "${self.packages.${system}.default}/bin/cert-manager-csi-driver"; };
