@@ -50,15 +50,15 @@ let
   };
 
   build-driver-amd = version:
-    build-driver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64;
+    (build-driver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64);
 
   build-driver-arm = version:
-    build-driver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform;
+    (build-driver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform);
 
   build-approver = sys: tag: crossPkgs: pkgs.dockerTools.buildLayeredImage {
     inherit tag;
     name = "${repo}/cert-manager-csi-driver-approver";
-    contents = with crossPkgs; [ (binary-approver sys "linux") ];
+    contents = [ (binary-approver sys "linux") ];
     config = {
       User = "1001:1001";
       Entrypoint = [ "cert-manager-csi-driver-approver" ];
@@ -66,10 +66,10 @@ let
   };
 
   build-approver-amd = version:
-    build-approver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64;
+    (build-approver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64);
 
   build-approver-arm = version:
-    build-approver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform;
+    (build-approver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform);
 
   build-sample = sys: tag: crossPkgs: pkgs.dockerTools.buildLayeredImage {
     inherit tag;
@@ -84,14 +84,14 @@ let
   };
 
   build-sample-amd = version:
-    build-sample "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64;
+    (build-sample "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64);
 
   build-sample-arm = version:
-    build-sample "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform;
+    (build-sample "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform);
 
   publish = pkgs.writeShellApplication {
     name = "publish";
-    runtimeInputs = with pkgs;[ podman ];
+    runtimeInputs = with pkgs;[ podman gcc ];
     text = ''
       echo ">> Pushing images..."
 
