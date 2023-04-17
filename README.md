@@ -48,3 +48,80 @@ helm upgrade -i -n cert-manager cert-manager-csi-driver-spiffe jetstack/cert-man
 
 You can find an example deployment in the
 [`./deploy/example/example-app.yaml`](./deploy/example/example-app.yaml).
+
+You can find more information on how to configure trust between your CA and AWS
+in the ["Roles Anywhere"
+documentation](https://docs.aws.amazon.com/rolesanywhere/latest/userguide/trust-model.html).
+For the demo I used the following Role Trust Relationship and Trust Profile Session Policy:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "rolesanywhere.amazonaws.com"
+            },
+            "Action": [
+                "sts:AssumeRole",
+                "sts:TagSession",
+                "sts:SetSourceIdentity"
+            ],
+            "Condition": {
+                "StringLike": {
+                    "aws:PrincipalTag/x509SAN/URI": "spiffe://cert-manager.kubecon2023/ns/*/sa/*"
+                },
+                "ArnEquals": {
+                    "aws:SourceArn": "arn:aws:rolesanywhere:eu-west-3:xxxx:trust-anchor/xxxx"
+                }
+            }
+        }
+    ]
+}
+```
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+          "Sid":"statement1",
+          "Effect": "Allow",
+          "Action": [
+            "s3:PutObject",
+            "s3:PutObjectAcl",
+            "s3:GetObject",
+            "s3:GetObjectAcl"
+          ],
+          "Resource": [
+              "arn:aws:s3:::kubecon-2023-spiffe-demo",
+              "arn:aws:s3:::kubecon-2023-spiffe-demo/*"
+          ],
+          "Condition": {
+              "StringLike": {
+                  "aws:PrincipalTag/x509SAN/URI": "spiffe://cert-manager.kubecon2023/ns/app-a/sa/*"
+              }
+          }
+        },
+        {
+          "Sid":"statement2",
+          "Effect": "Allow",
+          "Action": [
+            "s3:GetObject",
+            "s3:GetObjectAcl"
+          ],
+          "Resource": [
+              "arn:aws:s3:::kubecon-2023-spiffe-demo",
+              "arn:aws:s3:::kubecon-2023-spiffe-demo/*"
+          ],
+          "Condition": {
+              "StringLike": {
+                  "aws:PrincipalTag/x509SAN/URI": "spiffe://cert-manager.kubecon2023/ns/app-b/sa/*"
+              }
+          }
+        }
+    ]
+}
+```
+
