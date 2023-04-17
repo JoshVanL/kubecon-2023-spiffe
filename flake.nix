@@ -53,10 +53,10 @@
 
     in {
       packages = {
-        default = (image.build-driver localSystem localOS pkgs);
-        driver = (image.build-driver localSystem localOS pkgs);
-        approver = (image.build-approver localSystem localOS pkgs);
-        sample-app = (image.build-sample localSystem localOS pkgs);
+        default = (image.build-driver localSystem "dev" pkgs);
+        driver = (image.build-driver localSystem "dev" pkgs);
+        approver = (image.build-approver localSystem "dev" pkgs);
+        sample-app = (image.build-sample localSystem "dev" pkgs);
       };
 
       apps = {

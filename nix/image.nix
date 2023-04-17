@@ -49,6 +49,12 @@ let
     };
   };
 
+  build-driver-amd = version:
+    build-driver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64;
+
+  build-driver-arm = version:
+    build-driver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform;
+
   build-approver = sys: tag: crossPkgs: pkgs.dockerTools.buildLayeredImage {
     inherit tag;
     name = "${repo}/cert-manager-csi-driver-approver";
@@ -58,6 +64,12 @@ let
       Entrypoint = [ "cert-manager-csi-driver-approver" ];
     };
   };
+
+  build-approver-amd = version:
+    build-approver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64;
+
+  build-approver-arm = version:
+    build-approver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform;
 
   build-sample = sys: tag: crossPkgs: pkgs.dockerTools.buildLayeredImage {
     inherit tag;
@@ -70,6 +82,12 @@ let
     ];
     config = { User = "1001:1001"; };
   };
+
+  build-sample-amd = version:
+    build-sample "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64;
+
+  build-sample-arm = version:
+    build-sample "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform;
 
   publish = pkgs.writeShellApplication {
     name = "publish";
@@ -90,18 +108,18 @@ let
       SAMPLE_APP_IMAGE="${repo}/spiffe-sample-app:${version}"
 
       podman manifest create $DRIVER_IMAGE
-      podman manifest add $DRIVER_IMAGE docker-archive:${build-driver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64} --os linux --arch amd64
-      podman manifest add $DRIVER_IMAGE docker-archive:${build-driver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform} --os linux --arch arm64
+      podman manifest add $DRIVER_IMAGE docker-archive:${build-driver-amd version} --os linux --arch amd64
+      podman manifest add $DRIVER_IMAGE docker-archive:${build-driver-arm version} --os linux --arch arm64
       podman push $DRIVER_IMAGE
 
       podman manifest create $APPROVER_IMAGE
-      podman manifest add $APPROVER_IMAGE docker-archive:${build-approver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64} --os linux --arch amd64
-      podman manifest add $APPROVER_IMAGE docker-archive:${build-approver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform} --os linux --arch arm64
+      podman manifest add $APPROVER_IMAGE docker-archive:${build-approver-amd version} --os linux --arch amd64
+      podman manifest add $APPROVER_IMAGE docker-archive:${build-approver-arm version} --os linux --arch arm64
       podman push $APPROVER_IMAGE
 
       podman manifest create $SAMPLE_APP_IMAGE
-      podman manifest add $SAMPLE_APP_IMAGE docker-archive:${build-sample "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64} --os linux --arch amd64
-      podman manifest add $SAMPLE_APP_IMAGE docker-archive:${build-sample "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform} --os linux --arch arm64
+      podman manifest add $SAMPLE_APP_IMAGE docker-archive:${build-sample-amd version} --os linux --arch amd64
+      podman manifest add $SAMPLE_APP_IMAGE docker-archive:${build-sample-arm version} --os linux --arch arm64
       podman push $SAMPLE_APP_IMAGE
     '';
   };
@@ -110,12 +128,12 @@ in {
   inherit build-driver build-approver build-sample;
 
   packages = {
-    image-amd64-driver = (build-driver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64);
-    image-amd64-approver = (build-approver "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64);
-    image-amd64-sample-app = (build-sample "amd64" "${version}-amd64" pkgs.pkgsCross.gnu64);
-    image-arm64-driver = (build-driver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform);
-    image-arm64-approver = (build-approver "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform);
-    image-arm64-sample-app = (build-sample "arm64" "${version}-arm64" pkgs.pkgsCross.aarch64-multiplatform);
+    image-amd64-driver = build-driver-amd version;
+    image-amd64-approver = build-approver-amd version;
+    image-amd64-sample-app = build-sample-amd version;
+    image-arm64-driver = build-driver-arm version;
+    image-arm64-approver = build-approver-arm version;
+    image-arm64-sample-app = build-sample-arm version;
   };
 
   images = sys: tag: {
