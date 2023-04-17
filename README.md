@@ -14,7 +14,8 @@ additions to generate an AWS client using the returned SVID.
 
 Installation is the [same (including installing
 cert-manager)](https://cert-manager.io/docs/projects/csi-driver-spiffe/#installation),
-except for the image name and tag:
+except for the image name and tag. Remember to disable the default approver in
+cert-manager!:
 
 ```bash
 helm upgrade -i -n cert-manager cert-manager-csi-driver-spiffe jetstack/cert-manager-csi-driver-spiffe --wait \
