@@ -33,7 +33,10 @@
         (name: entryType: lib.hasSuffix ".nix" name) (builtins.readDir ./nix/overlays)
       ) ++ [ gomod2nix.overlays.default ];
 
-      pkgs = import nixpkgs { inherit system overlays; };
+      pkgs = import nixpkgs {
+        inherit system overlays;
+        config.packageOverrides = (import ./nix/pkgs/default.nix);
+      };
       amdPkgs = import nixpkgs { inherit overlays; system = "x86_64-linux"; };
       armPkgs = import nixpkgs { inherit overlays; system = "aarch64-linux"; };
 
