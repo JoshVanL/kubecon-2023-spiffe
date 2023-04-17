@@ -81,7 +81,7 @@ let
         --set app.driver.volumeMounts[0].mountPath=/var/run/secrets/cert-manager-csi-driver-spiffe \
         --set app.driver.sourceCABundle=/var/run/secrets/cert-manager-csi-driver-spiffe/ca.crt
 
-      kubectl apply -f ${repo}/nix/example-app.yaml
+      kubectl apply -f ${repo}/nix/assets/example-app.yaml
     '';
   };
 
