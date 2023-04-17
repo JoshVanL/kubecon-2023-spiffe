@@ -14,6 +14,7 @@
 
   outputs = { self, nixpkgs, utils, gomod2nix }:
   let
+    lib = nixpkgs.lib;
     targetSystems = with utils.lib.system; [
       x86_64-linux
       x86_64-darwin
@@ -27,14 +28,10 @@
 
   in utils.lib.eachSystem targetSystems (system:
     let
-      overlays = [
-        (final: prev: {
-          go = prev.go_1_20;
-          buildGoApplication = prev.buildGo120Application;
-        })
-        gomod2nix.overlays.default
-        (import ./nix/overlays/cmctl.nix)
-      ];
+      overlays = lib.mapAttrsToList (name: _: import ./nix/overlays/${name})
+      (lib.filterAttrs
+        (name: entryType: lib.hasSuffix ".nix" name) (builtins.readDir ./nix/overlays)
+      ) ++ [ gomod2nix.overlays.default ];
 
       pkgs = import nixpkgs { inherit system overlays; };
       amdPkgs = import nixpkgs { inherit overlays; system = "x86_64-linux"; };
@@ -44,8 +41,12 @@
 
       ci = import ./nix/ci.nix {
         gomod2nix = (gomod2nix.packages.${system}.default);
+        inherit repo pkgs;
+      };
+
+      demo = import ./nix/demo.nix {
         images = (image.images localSystem "dev");
-        inherit src repo pkgs;
+        inherit repo pkgs;
       };
 
       localSystem = if pkgs.stdenv.hostPlatform.isAarch64 then "arm64" else "amd64";
