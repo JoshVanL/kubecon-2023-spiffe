@@ -53,14 +53,14 @@
 
     in {
       packages = {
-        default = (image.build-driver localSystem localOS);
-        driver = (image.build-driver localSystem localOS);
-        approver = (image.build-approver localSystem localOS);
-        sample-app = (image.build-sample localSystem localOS);
-      } // image.packages;
+        default = (image.build-driver localSystem localOS pkgs);
+        driver = (image.build-driver localSystem localOS pkgs);
+        approver = (image.build-approver localSystem localOS pkgs);
+        sample-app = (image.build-sample localSystem localOS pkgs);
+      };
 
       apps = {
-        default = {type = "app"; program = "${self.packages.${system}.default}/bin/dapr-cert-manager"; };
+        default = {type = "app"; program = "${self.packages.${system}.default}/bin/cert-manager-csi-driver"; };
       } // image.apps // ci.apps;
 
       devShells.default = pkgs.mkShell {
