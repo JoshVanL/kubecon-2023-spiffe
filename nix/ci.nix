@@ -67,33 +67,23 @@ let
     '';
   };
 
-  demo = pkgs.writeShellApplication {
-    name = "demo";
+  demo-install = pkgs.writeShellApplication {
+    name = "demo-install";
     runtimeInputs = with pkgs; [
-      demo-loadimage
-      kubernetes-helm
+      cmctl
       kubectl
-      kind
+      kubernetes-helm
     ];
     text = ''
-      TMPDIR="''${TMPDIR:-$(mktemp -d)}"
-      echo ">> using tmpdir: $TMPDIR"
-
-      kind create cluster --kubeconfig "$TMPDIR/kubeconfig" --name spiffe-aws
-
-      demo-loadimage
-
-      export KUBECONFIG="$TMPDIR/kubeconfig"
-      echo ">> using kubeconfig: $KUBECONFIG"
-      echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-      echo "export KUBECONFIG=$KUBECONFIG"
-      echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
       echo ">> installing cert-manager, and CSI driver SPIFFE"
 
-      helm repo add --force-update jetstack https://charts.jetstack.io
-      helm upgrade --install cert-manager jetstack/cert-manager --create-namespace --namespace cert-manager --set installCRDs=true --wait
+      cmctl x install -n cert-manager --set extraArgs=\{--controllers='*\,-certificaterequests-approver'\}
+      kubectl apply --wait -f ${repo}/deploy/example/clusterissuer.yaml
 
-      kubectl apply -f ${repo}/deploy/example/clusterissuer.yaml
+      sleep 5
+
+      cmctl approve -n cert-manager "$(kubectl get cr -n cert-manager -ojsonpath='{.items[0].metadata.name}')"
+      cmctl approve -n cert-manager "$(kubectl get cr -n cert-manager -ojsonpath='{.items[1].metadata.name}')"
 
       helm upgrade -i -n cert-manager cert-manager-csi-driver-spiffe ./deploy/charts/csi-driver-spiffe --wait \
         --set app.logLevel=2 \
@@ -110,6 +100,31 @@ let
         --set app.driver.sourceCABundle=/var/run/secrets/cert-manager-csi-driver-spiffe/ca.crt
 
       kubectl apply -f ${repo}/nix/example-app.yaml
+    '';
+  };
+
+  demo = pkgs.writeShellApplication {
+    name = "demo";
+    runtimeInputs = with pkgs; [
+      kind
+      demo-loadimage
+      demo-install
+    ];
+    text = ''
+      TMPDIR="''${TMPDIR:-$(mktemp -d)}"
+      echo ">> using tmpdir: $TMPDIR"
+
+      kind create cluster --kubeconfig "$TMPDIR/kubeconfig" --name spiffe-aws
+
+      demo-loadimage
+
+      export KUBECONFIG="$TMPDIR/kubeconfig"
+      echo ">> using kubeconfig: $KUBECONFIG"
+      echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+      echo "export KUBECONFIG=$KUBECONFIG"
+      echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+
+      demo-install
     '';
   };
 
@@ -141,6 +156,7 @@ in {
     update = {type = "app"; program = "${update}/bin/update";};
     check = {type = "app"; program = "${check}/bin/check";};
     demo-loadimage = {type = "app"; program = "${demo-loadimage}/bin/demo-loadimage";};
+    demo-install = {type = "app"; program = "${demo-install}/bin/demo-install";};
     demo = {type = "app"; program = "${demo}/bin/demo";};
   };
 }

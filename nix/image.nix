@@ -7,7 +7,7 @@ version,
 }:
 
 let
-  repo = "ghcr.io/joshvanl";
+  registry = "ghcr.io/joshvanl";
 
   binary-driver = sys: os: (pkgs.buildGoApplication {
     name = "cert-manager-csi-driver";
@@ -41,7 +41,7 @@ let
 
   build-driver = sys: tag: crossPkgs: pkgs.dockerTools.buildLayeredImage {
     inherit tag;
-    name = "${repo}/cert-manager-csi-driver";
+    name = "${registry}/cert-manager-csi-driver";
     contents = with crossPkgs; [
       mount umount cacert
       (binary-driver sys "linux")
@@ -59,7 +59,7 @@ let
 
   build-approver = sys: tag: crossPkgs: pkgs.dockerTools.buildLayeredImage {
     inherit tag;
-    name = "${repo}/cert-manager-csi-driver-approver";
+    name = "${registry}/cert-manager-csi-driver-approver";
     contents = [ (binary-approver sys "linux") ];
     config = {
       User = "1001:1001";
@@ -75,7 +75,7 @@ let
 
   build-sample = sys: tag: crossPkgs: pkgs.dockerTools.buildLayeredImage {
     inherit tag;
-    name = "${repo}/spiffe-sample-app";
+    name = "${registry}/spiffe-sample-app";
     contents = with crossPkgs; [
       awscli2
       cacert
@@ -105,9 +105,9 @@ let
       echo ">> Logging into GitHub Container Registry..."
       echo "''${GITHUB_TOKEN}" | podman login ghcr.io -u $ --password-stdin
 
-      DRIVER_IMAGE="${repo}/cert-manager-csi-driver:${version}"
-      APPROVER_IMAGE="${repo}/cert-manager-csi-driver-approver:${version}"
-      SAMPLE_APP_IMAGE="${repo}/spiffe-sample-app:${version}"
+      DRIVER_IMAGE="${registry}/cert-manager-csi-driver:${version}"
+      APPROVER_IMAGE="${registry}/cert-manager-csi-driver-approver:${version}"
+      SAMPLE_APP_IMAGE="${registry}/spiffe-sample-app:${version}"
 
       podman manifest create $DRIVER_IMAGE
       podman manifest add $DRIVER_IMAGE docker-archive:${build-driver-amd version} --os linux --arch amd64
@@ -140,15 +140,15 @@ in {
 
   images = sys: tag: {
     driver = {
-      name = "${repo}/cert-manager-csi-driver";
+      name = "${registry}/cert-manager-csi-driver";
       tar = (build-driver sys tag pkgs);
     };
     approver = {
-      name = "${repo}/cert-manager-csi-driver-approver";
+      name = "${registry}/cert-manager-csi-driver-approver";
       tar = (build-approver sys tag pkgs);
     };
     sample-app = {
-      name = "${repo}/spiffe-sample-app";
+      name = "${registry}/spiffe-sample-app";
       tar = (build-sample sys tag pkgs);
     };
   };

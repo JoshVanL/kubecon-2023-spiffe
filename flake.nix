@@ -21,7 +21,7 @@
       aarch64-darwin
     ];
 
-    repo = ./.;
+    repo = nixpkgs.lib.sourceFilesBySuffices ./. [ ".go" "go.mod" "go.sum" "gomod2nix.toml" ".yaml" ];
     src = nixpkgs.lib.sourceFilesBySuffices ./. [ ".go" "go.mod" "go.sum" "gomod2nix.toml" ];
     version = "aws";
 
