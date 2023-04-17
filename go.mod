@@ -8,7 +8,7 @@ require (
 	github.com/cert-manager/cert-manager v1.10.0
 	github.com/cert-manager/csi-lib v0.4.0
 	github.com/fsnotify/fsnotify v1.6.0
-	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/logr v1.2.4
 	github.com/norwoodj/helm-docs v1.11.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.24.1
