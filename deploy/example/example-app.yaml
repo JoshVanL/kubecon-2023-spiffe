@@ -53,7 +53,7 @@ spec:
       serviceAccountName: example-app
       containers:
         - name: example-app
-          image: amazon/aws-cli
+          image: ghcr.io/joshvanl/spiffe-sample-app:aws
           imagePullPolicy: IfNotPresent
           command: [ "sleep", "1000000" ]
           volumeMounts:

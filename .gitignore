@@ -25,3 +25,4 @@ bin
 
 /csi-driver-spiffe
 /_artifacts
+/result
