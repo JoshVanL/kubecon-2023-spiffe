@@ -27,7 +27,6 @@
 
   in utils.lib.eachSystem targetSystems (system:
     let
-
       overlays = [
         (final: prev: {
           go = prev.go_1_20;
@@ -36,23 +35,11 @@
         gomod2nix.overlays.default
       ];
 
-      pkgs = import nixpkgs {
-        inherit system overlays;
-      };
+      pkgs = import nixpkgs { inherit system overlays; };
+      amdPkgs = import nixpkgs { inherit overlays; system = "x86_64-linux"; };
+      armPkgs = import nixpkgs { inherit overlays; system = "aarch64-linux"; };
 
-      amdPkgs = import nixpkgs {
-        inherit overlays;
-        system = "x86_64-linux";
-      };
-
-      armPkgs = import nixpkgs {
-        inherit overlays;
-        system = "aarch64-linux";
-      };
-
-      image = import ./nix/image.nix {
-        inherit src pkgs amdPkgs armPkgs version;
-      };
+      image = import ./nix/image.nix { inherit src pkgs amdPkgs armPkgs version; };
 
       ci = import ./nix/ci.nix {
         gomod2nix = (gomod2nix.packages.${system}.default);
@@ -61,7 +48,6 @@
       };
 
       localSystem = if pkgs.stdenv.hostPlatform.isAarch64 then "arm64" else "amd64";
-      localOS = if pkgs.stdenv.hostPlatform.isDarwin then "darwin" else "linux";
 
     in {
       packages = {

@@ -299,8 +299,8 @@ schema = 3
     version = "v0.0.0-20191010083416-a7dc8b61c822"
     hash = "sha256-79URDDFenmGc9JZu+5AXHToMrtTREHb3BC84b/gym9Q="
   [mod."github.com/norwoodj/helm-docs"]
-    version = "v1.9.1"
-    hash = "sha256-/4xG3d0OHtmMOsxUmidkMP+Jkz418SPO4E4jap2ejf4="
+    version = "v1.11.0"
+    hash = "sha256-IsOMM5bcRHtXnGJ58puIkJH2Xo/bpDPyYTS2vhHZTvY="
   [mod."github.com/nxadm/tail"]
     version = "v1.4.8"
     hash = "sha256-JP3RZVZLFhaBZ2VdF/fbyMPMLqrPZDjP98f1ey2OePo="
