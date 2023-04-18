@@ -42,6 +42,7 @@ let
     name = "check-boilerplate";
     runtimeInputs = with pkgs; [ python3 ];
     text = ''
+      echo ${repo}/nix/assets/boilerplate/boilerplate.py
       mapfile -t files_need_boilerplate < <(${repo}/nix/assets/boilerplate/boilerplate.py "$@")
       if [[ "''${#files_need_boilerplate[@]}" -gt 0 ]]; then
         for file in "''${files_need_boilerplate[@]}"; do
@@ -49,6 +50,7 @@ let
         done
         exit 1
       fi
+      echo '>> boilerplate is up to date'
     '';
   };
 
