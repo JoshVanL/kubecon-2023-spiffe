@@ -111,6 +111,8 @@ let
   };
 
 in {
+  inherit demo-loadimage demo-install demo;
+
   apps = {
     demo-loadimage = {type = "app"; program = "${demo-loadimage}/bin/demo-loadimage";};
     demo-install = {type = "app"; program = "${demo-install}/bin/demo-install";};

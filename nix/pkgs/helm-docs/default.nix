@@ -12,10 +12,10 @@ buildGoModule rec {
     owner = "norwoodj";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-YAa5Dr8Pc6P3RZ3SCiyi7zwmVd5tPalM88R8bxgg6Ja=";
+    hash = "sha256-1ifaiKEKvHdrcJEfcN0bFtzNTesmPn1rwzP2Eul7Yck=";
   };
 
-  vendorSha256 = "sha256-J/sJd2LLMBr53Z3sGrWgnWA8Ry+XqqfCEObqFyUD96a=";
+  vendorSha256 = "sha256-FpmeOQ8nV+sEVu2+nY9o9aFbCpwSShQUFOmyzwEQ9Pw=";
 
   nativeBuildInputs = [ installShellFiles ];
   postInstall = ''
@@ -27,13 +27,13 @@ buildGoModule rec {
 
   meta = with lib; {
     homepage = "https://github.com/norwoodj/helm-docs";
-    description = "TODO";
+    description = "A tool for automatically generating markdown documentation for helm charts";
     longDescription = ''
       The helm-docs tool auto-generates documentation from helm charts into
       markdown files. The resulting files contain metadata about their
       respective chart and a table with each of the chart's values, their
       defaults, and an optional description parsed from comments.
     '';
-    license = licenses.gpl;
+    license = licenses.gpl3;
   };
 }

@@ -2,6 +2,7 @@
 pkgs,
 gomod2nix,
 repo,
+demo,
 }:
 
 let
@@ -23,7 +24,7 @@ let
 
   checkhelmdocs = pkgs.writeShellApplication {
     name = "check-helmdocs";
-    runtimeInputs = [ helm-docs ];
+    runtimeInputs = with pkgs; [ helm-docs ];
     text = ''
       tmpdir=$(mktemp -d)
       trap 'rm -rf -- "$tmpdir"' EXIT
@@ -39,12 +40,12 @@ let
 
   checkboilerplate = pkgs.writeShellApplication {
     name = "check-boilerplate";
-    runtimeInputs = [ python3 ];
+    runtimeInputs = with pkgs; [ python3 ];
     text = ''
-      files_need_boilerplate=($(boiler "$@"))
-      if [[ $${#files_need_boilerplate[@]} -gt 0 ]]; then
-        for file in "$${files_need_boilerplate[@]}"; do
-          echo "Boilerplate header is wrong for: $${file}"
+      mapfile -t files_need_boilerplate < <(${repo}/nix/assets/boilerplate/boilerplate.py "$@")
+      if [[ "''${#files_need_boilerplate[@]}" -gt 0 ]]; then
+        for file in "''${files_need_boilerplate[@]}"; do
+          echo "Boilerplate header is wrong for: $file"
         done
         exit 1
       fi
@@ -53,7 +54,7 @@ let
 
   update = pkgs.writeShellApplication {
     name = "update";
-    runtimeInputs = [
+    runtimeInputs = with pkgs; [
       gomod2nix
       helm-docs
     ];
@@ -80,9 +81,27 @@ let
     '';
   };
 
+  e2e = pkgs.writeShellApplication {
+    name = "e2e";
+    runtimeInputs = with pkgs; [
+      demo
+      kind
+      ginkgo
+    ];
+    text = ''
+      demo
+
+      TMPDIR="''${TMPDIR:-$(mktemp -d)}"
+      kind get kubeconfig --name spiffe-aws > "$TMPDIR/kubeconfig.yaml"
+
+      ginkgo -nodes 1 ${repo}/test/e2e/. -- --kubeconfig-path "$TMPDIR/kubeconfig.yaml" --kubectl-path ${pkgs.kubectl}/bin/kubectl
+    '';
+  };
+
 in {
   apps = {
     update = {type = "app"; program = "${update}/bin/update";};
     check = {type = "app"; program = "${check}/bin/check";};
+    e2e = {type = "app"; program = "${e2e}/bin/e2e";};
   };
 }

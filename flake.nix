@@ -22,7 +22,7 @@
       aarch64-darwin
     ];
 
-    repo = nixpkgs.lib.sourceFilesBySuffices ./. [ ".go" "go.mod" "go.sum" "gomod2nix.toml" ".yaml" ".md" ];
+    repo = ./.;
     src = nixpkgs.lib.sourceFilesBySuffices ./. [ ".go" "go.mod" "go.sum" "gomod2nix.toml" ];
     version = "aws";
 
@@ -42,13 +42,14 @@
 
       image = import ./nix/image.nix { inherit src pkgs amdPkgs armPkgs version; };
 
-      ci = import ./nix/ci.nix {
-        gomod2nix = (gomod2nix.packages.${system}.default);
+      demo = import ./nix/demo.nix {
+        images = (image.images localSystem "dev");
         inherit repo pkgs;
       };
 
-      demo = import ./nix/demo.nix {
-        images = (image.images localSystem "dev");
+      ci = import ./nix/ci.nix {
+        gomod2nix = (gomod2nix.packages.${system}.default);
+        demo = demo.demo;
         inherit repo pkgs;
       };
 
