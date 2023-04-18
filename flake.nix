@@ -65,7 +65,7 @@
 
       apps = {
         default = {type = "app"; program = "${self.packages.${system}.default}/bin/cert-manager-csi-driver"; };
-      } // image.apps // ci.apps;
+      } // image.apps // ci.apps // demo.apps;
 
       devShells.default = pkgs.mkShell {
         buildInputs = with pkgs; [
